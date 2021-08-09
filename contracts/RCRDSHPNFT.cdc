@@ -3,6 +3,7 @@ import NonFungibleToken from NONFUNGIBLETOKENADDRESS
 pub contract RCRDSHPNFT: NonFungibleToken {
 
     pub var totalSupply: UInt64
+    pub let minterStoragePath: StoragePath
     pub let collectionStoragePath: StoragePath
     pub let collectionPublicPath: PublicPath
 
@@ -75,19 +76,21 @@ pub contract RCRDSHPNFT: NonFungibleToken {
 
     init() {
         self.totalSupply = 0
+
+        self.minterStoragePath = /storage/RCRDSHPNFTMinter
         self.collectionStoragePath = /storage/RCRDSHPNFTCollection
         self.collectionPublicPath  = /public/RCRDSHPNFTCollection
 
         let collection <- create Collection()
-        self.account.save(<-collection, to: /storage/RCRDSHPNFTCollection)
+        self.account.save(<-collection, to: self.collectionStoragePath)
 
         self.account.link<&{NonFungibleToken.CollectionPublic}>(
-            /public/RCRDSHPNFTCollection,
-            target: /storage/RCRDSHPNFTCollection
+            self.collectionPublicPath,
+            target: self.collectionStoragePath
         )
 
         let minter <- create NFTMinter()
-        self.account.save(<-minter, to: /storage/RCRDSHPNFTMinter)
+        self.account.save(<-minter, to: self.minterStoragePath)
 
         emit ContractInitialized()
     }
