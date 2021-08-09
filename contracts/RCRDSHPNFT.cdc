@@ -3,6 +3,8 @@ import NonFungibleToken from NONFUNGIBLETOKENADDRESS
 pub contract RCRDSHPNFT: NonFungibleToken {
 
     pub var totalSupply: UInt64
+    pub let collectionStoragePath: StoragePath
+    pub let collectionPublicPath: PublicPath
 
     pub event ContractInitialized()
     pub event Withdraw(id: UInt64, from: Address?)
@@ -73,6 +75,8 @@ pub contract RCRDSHPNFT: NonFungibleToken {
 
     init() {
         self.totalSupply = 0
+        self.collectionStoragePath = /storage/RCRDSHPNFTCollection
+        self.collectionPublicPath  = /public/RCRDSHPNFTCollection
 
         let collection <- create Collection()
         self.account.save(<-collection, to: /storage/RCRDSHPNFTCollection)
