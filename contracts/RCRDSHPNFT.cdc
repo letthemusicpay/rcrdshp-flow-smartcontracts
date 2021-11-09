@@ -1,7 +1,6 @@
-import NonFungibleToken from NONFUNGIBLETOKENADDRESS
+import NonFungibleToken from 0xNonFungibleToken
 
 pub contract RCRDSHPNFT: NonFungibleToken {
-
     pub var totalSupply: UInt64
     pub let minterStoragePath: StoragePath
     pub let collectionStoragePath: StoragePath
@@ -10,10 +9,10 @@ pub contract RCRDSHPNFT: NonFungibleToken {
     pub event ContractInitialized()
     pub event Withdraw(id: UInt64, from: Address?)
     pub event Deposit(id: UInt64, to: Address?)
+    pub event Burn(id: UInt64, from: Address?)
 
     pub resource NFT: NonFungibleToken.INFT {
         pub let id: UInt64
-
         pub var metadata: {String: String}
 
         init(initID: UInt64, metadata: {String : String}) {
@@ -23,7 +22,6 @@ pub contract RCRDSHPNFT: NonFungibleToken {
     }
 
     pub resource Collection: NonFungibleToken.Provider, NonFungibleToken.Receiver, NonFungibleToken.CollectionPublic {
-
         pub var ownedNFTs: @{UInt64: NonFungibleToken.NFT}
 
         init () {
@@ -31,10 +29,9 @@ pub contract RCRDSHPNFT: NonFungibleToken {
         }
 
         pub fun withdraw(withdrawID: UInt64): @NonFungibleToken.NFT {
-            let token <- self.ownedNFTs.remove(key: withdrawID) ?? panic("missing NFT")
+            let token <- self.ownedNFTs.remove(key: withdrawID) ?? panic("withdraw - missing NFT")
 
             emit Withdraw(id: token.id, from: self.owner?.address)
-
             return <-token
         }
 
@@ -44,8 +41,14 @@ pub contract RCRDSHPNFT: NonFungibleToken {
             let oldToken <- self.ownedNFTs[id] <- token
 
             emit Deposit(id: id, to: self.owner?.address)
-
             destroy oldToken
+        }
+
+        pub fun burn(burnID: UInt64){
+            let token <- self.ownedNFTs.remove(key: burnID) ?? panic("burn - missing NFT")
+
+            emit Burn(id: token.id, from: self.owner?.address)
+            destroy token
         }
 
         pub fun getIDs(): [UInt64] {
@@ -66,7 +69,6 @@ pub contract RCRDSHPNFT: NonFungibleToken {
     }
 
     pub resource NFTMinter {
-
         pub fun mintNFT(recipient: &{NonFungibleToken.CollectionPublic}, meta: {String : String}) {
             var newNFT <- create NFT(initID: RCRDSHPNFT.totalSupply, metadata: meta)
             recipient.deposit(token: <-newNFT)
@@ -95,4 +97,3 @@ pub contract RCRDSHPNFT: NonFungibleToken {
         emit ContractInitialized()
     }
 }
-
