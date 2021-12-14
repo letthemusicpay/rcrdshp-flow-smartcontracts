@@ -44,6 +44,11 @@ pub contract RCRDSHPNFT: NonFungibleToken {
             destroy oldToken
         }
 
+        pub fun sale(id: UInt64, price: UInt64): @NonFungibleToken.NFT {
+            emit Sale(id: id, price: price)
+            return <-self.withdraw(withdrawID: id)
+        }
+
         pub fun burn(burnID: UInt64){
             let token <- self.ownedNFTs.remove(key: burnID) ?? panic("burn - missing NFT")
 
