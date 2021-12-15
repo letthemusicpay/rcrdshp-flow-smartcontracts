@@ -10,6 +10,7 @@ pub contract RCRDSHPNFT: NonFungibleToken {
     pub event Withdraw(id: UInt64, from: Address?)
     pub event Deposit(id: UInt64, to: Address?)
     pub event Burn(id: UInt64, from: Address?)
+    pub event Sale(id: UInt64, price: UInt64)
 
     pub resource NFT: NonFungibleToken.INFT {
         pub let id: UInt64
