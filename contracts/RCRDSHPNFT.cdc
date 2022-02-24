@@ -1,4 +1,5 @@
-import NonFungibleToken from 0xNonFungibleToken
+import NonFungibleToken from 0x631e88ae7f1d7c20
+import MetadataViews from 0x631e88ae7f1d7c20
 
 pub contract RCRDSHPNFT: NonFungibleToken {
     pub var totalSupply: UInt64
@@ -12,9 +13,32 @@ pub contract RCRDSHPNFT: NonFungibleToken {
     pub event Burn(id: UInt64, from: Address?)
     pub event Sale(id: UInt64, price: UInt64)
 
-    pub resource NFT: NonFungibleToken.INFT {
+    pub resource NFT: NonFungibleToken.INFT, MetadataViews.Resolver {
         pub let id: UInt64
         pub var metadata: {String: String}
+
+        pub fun getViews(): [Type] {
+            return [
+                Type<MetadataViews.Display>()
+            ]
+        }
+
+        pub fun resolveView(_ view: Type): AnyStruct? {
+            switch view {
+                case Type<MetadataViews.Display>():
+                    let name = self.metadata["name"]!
+                    let serial = self.metadata["serial_number"]!
+
+                    return MetadataViews.Display(
+                        name: name.concat(" #").concat(serial),
+                        description: self.metadata["description"]!,
+                        thumbnail: MetadataViews.HTTPFile(
+                            url: self.metadata["uri"]!.concat("/thumbnail")
+                        )
+                    )
+            }
+            return nil
+        }
 
         init(initID: UInt64, metadata: {String : String}) {
             self.id = initID
@@ -22,7 +46,19 @@ pub contract RCRDSHPNFT: NonFungibleToken {
         }
     }
 
-    pub resource Collection: NonFungibleToken.Provider, NonFungibleToken.Receiver, NonFungibleToken.CollectionPublic {
+    pub resource interface RCRDSHPNFTCollectionPublic {
+        pub fun deposit(token: @NonFungibleToken.NFT)
+        pub fun getIDs(): [UInt64]
+        pub fun borrowNFT(id: UInt64): &NonFungibleToken.NFT
+        pub fun borrowRCRDSHPNFT(id: UInt64): &RCRDSHPNFT.NFT? {
+            post {
+                (result == nil) || (result?.id == id):
+                    "Cannot borrow RCRDSHPNFT reference: the ID of the returned reference is incorrect"
+            }
+        }
+    }
+
+    pub resource Collection: RCRDSHPNFTCollectionPublic, NonFungibleToken.Provider, NonFungibleToken.Receiver, NonFungibleToken.CollectionPublic, MetadataViews.ResolverCollection {
         pub var ownedNFTs: @{UInt64: NonFungibleToken.NFT}
 
         init () {
@@ -65,6 +101,21 @@ pub contract RCRDSHPNFT: NonFungibleToken {
             return &self.ownedNFTs[id] as &NonFungibleToken.NFT
         }
 
+        pub fun borrowRCRDSHPNFT(id: UInt64): &RCRDSHPNFT.NFT? {
+            if self.ownedNFTs[id] != nil {
+                let ref = &self.ownedNFTs[id] as auth &NonFungibleToken.NFT
+                return ref as! &RCRDSHPNFT.NFT
+            }
+
+            return nil
+        }
+
+        pub fun borrowViewResolver(id: UInt64): &AnyResource{MetadataViews.Resolver} {
+            let nft = &self.ownedNFTs[id] as auth &NonFungibleToken.NFT
+            let rcrdshpNFT = nft as! &RCRDSHPNFT.NFT
+            return rcrdshpNFT as &AnyResource{MetadataViews.Resolver}
+        }
+
         destroy() {
             destroy self.ownedNFTs
         }
@@ -92,7 +143,7 @@ pub contract RCRDSHPNFT: NonFungibleToken {
         let collection <- create Collection()
         self.account.save(<-collection, to: self.collectionStoragePath)
 
-        self.account.link<&{NonFungibleToken.CollectionPublic}>(
+        self.account.link<&RCRDSHPNFT.Collection{NonFungibleToken.CollectionPublic, RCRDSHPNFT.RCRDSHPNFTCollectionPublic}>(
             self.collectionPublicPath,
             target: self.collectionStoragePath
         )
