@@ -34,7 +34,8 @@ pub contract RCRDSHPNFT: NonFungibleToken {
                         description: self.metadata["description"]!,
                         thumbnail: MetadataViews.HTTPFile(
                             url: self.metadata["uri"]!.concat("/thumbnail")
-                        )
+                        ),
+                        type: self.metadata["type"]!
                     )
             }
             return nil
