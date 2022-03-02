@@ -1,5 +1,5 @@
-import NonFungibleToken from 0xNonFungibleADDRESS
-import MetadataViews from 0xMetadataViewsADDRESS
+import NonFungibleToken from 0x1d7e57aa55817448
+import MetadataViews from 0x1d7e57aa55817448
 
 pub contract RCRDSHPNFT: NonFungibleToken {
     pub var totalSupply: UInt64
